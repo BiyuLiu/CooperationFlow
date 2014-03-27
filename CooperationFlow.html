@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style>
+
+.axis path {
+  display: none;
+}
+
+.axis line {
+  shape-rendering: crispEdges;
+  stroke: #000;
+}
+
+.axis .minor line {
+  stroke: #777;
+  stroke-dasharray: 2,2;
+}
+
+
+#resultSearch{
+  float:left;
+  width:200px;
+  height:800px;
+  overflow-y: scroll;
+}
+
+#legendC{
+  float:right;
+  width:300px;
+  height:800px;
+}
+
+
+#chart {
+  height:800px;
+  overflow-y: scroll;
+}
+.node rect {
+  cursor: move;
+  fill-opacity: .9;
+  shape-rendering: crispEdges;
+}
+
+.node text {
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff;
+}
+
+.link {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .2;
+}
+
+.link:hover {
+  stroke-opacity: .5;
+}
+
+</style>
+<body>
+<!-- <canvas id="timeline" width="1310" height="20">
+</canvas>
+-->
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://d3js.org/d3.v2.min.js?2.9.1"></script>
+<script src="http://dimplejs.org/dist/dimple.v1.1.5.min.js"></script>
+
+
+<script src="tools/sankey2.js"></script>
+<script src="tools/generateGraphic.js"></script>
+<script src="tools/analysisDetailed.js"></script>
+
+<div id="resultSearch"> </div>
+<div id="legendC">
+    x = collaborationStep <input type='radio' name='myRadios' onChange="makeByStep();">
+  x = time  <input type='radio' name='myRadios' onChange="makeByDate();">
+  nodes to display : <input type="text" id = "nbNodes" value="30" size="2"><button type="button" onclick="changeNbNodes();">Go</button>
+  <div id="legend"></div>
+  <div id="graphs"></div>
+    
+</div>
+<p id="chart">
+
+
+
+
+<script>
+
+
+
+
+var currentDisplayedTag;
+var videos,links,allTags,allCats,largestNode = -1;
+var sankey;
+var firstDate,lastDate;
+var axisHeight = 0;
+var rOfBiggestNode = 20;
+
+var margin = {top: 50, right: 10, bottom: 6, left: 50},
+    width = 1000 - margin.left - margin.right,
+    height = 20000 - margin.top - margin.bottom;
+
+var formatNumber = d3.format(",.0f"),
+    format = function(d) { return formatNumber(d) + " TWh"; },
+    
+    color = d3.scale.category20(); //reinitialised when changing the displayed flow
+
+ count = 0;
+
+ 
+ //load the list of all flows to display
+ jQuery.getJSON("data/flowsToDisplay.json")
+  .done(function(data){
+    
+    allTags=data;
+      
+    //get the argument passed to the address if exist, node to display
+    arg = window.location.search.replace("?","");
+    console.log("argument:"+arg);
+    if (arg!="") {
+          loadVideoAndLinks(arg);
+    }
+    else{
+      loadVideoAndLinks(allTags[0]);
+    }
+  })
+  .fail(function(a,b,c){
+    console.log(b+"-"+c)
+    
+  }
+  )
+  
+ 
+  
+   
+  
+  //function called to change the cooperation flow displayed
+  function changeToEl(tag){
+    $("#chart").html("");
+    $("#graphs").html("");
+    
+    loadVideoAndLinks(tag);
+  }
+  
+  
+  //function to load the videos and links
+  //------------------------------------
+  function loadVideoAndLinks(tag){
+    currentDisplayedTag = tag;
+    count = 0;
+    color = d3.scale.category20();
+      jQuery.getJSON("data/"+tag+".json")
+    .done(function(data){
+     //load categories
+    allCats = data.categories;
+    console.log("loaded categories:"+allCats.length);
+    drawLegend(allCats,color);
+  
+    //load nodes
+    videos = data.nodes;
+    console.log("loaded videos:"+videos.length);
+    populatePossibleTags(allTags);
+    
+    //load links
+    links = data.links;
+    console.log("initial nb links:"+videos.length);
+    
+    firstDate = data.firstDate;
+    lastDate = data.lastDate;
+    if (data.hasOwnProperty("largestNode")) {
+          largestNode = data.largestNode;
+    }
+
+    
+    
+    ready();
+        
+    })
+    .fail(function(a,b,c){
+      console.log(b+"-"+c)
+      
+    }
+    )
+  }
+    //------------------------------------
+
+
+
+//var test = [1,2,3];
+//var pie = d3.layout.pie()
+  //  .sort(null)
+   // .value(function(d) { return d }); //d.leafs
+    
+var pie = d3.layout.pie()
+.sort(null)
+.value(function(d) { return d.val }); //d.leafs
+    
+    
+var arc = function(sizeOut,sizeIn) { return d3.svg.arc()
+.outerRadius(sizeOut)
+.innerRadius(sizeIn)
+}
+
+    
+
+ 
+
+
+function populatePossibleTags(jsonTags){
+  var resultSearch = "";
+    
+  jsonTags.forEach(function(el){
+
+      resultSearch+="<div onclick=\"changeToEl('";
+      resultSearch+=el+"')\">"
+      resultSearch+=el+"</div><br>";
+    
+  
+  
+  });
+    jQuery("#resultSearch").html(resultSearch);
+
+}
+
+function computeScalingForNodeSize(){
+  maxValue = 0;
+  if (largestNode==-1) {
+      maxValue = 0;
+      videos.forEach(function(node){
+	if (node.popularity>maxValue) {
+	  maxValue=node.popularity;
+	}
+      });
+  }
+  else{
+    maxValue=largestNode;
+  }
+  
+  console.log("maximum popularity of node : "+maxValue);
+
+  convertPopularityToNodeR=Math.sqrt(maxValue)/rOfBiggestNode;
+  
+}
+
+function sizeFromPopularity(size){
+ return Math.sqrt(size+1)/convertPopularityToNodeR ;
+}
+
+
+//function to make the legend
+function drawLegend(elts,colors){
+  $("#legend").html("");
+  
+  var legend = d3.select("#legend").append("svg")
+      .attr("class", "legend")
+      .attr("width", 200)
+      .attr("height", elts.length*20)
+    .selectAll("g")
+      .data(elts)
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", function(d, i) { return colors(d); });
+
+  legend.append("text")
+      .attr("x", 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .text(function(d) { return d; });
+}
+
+var svg;
+
+function ready() {
+  
+  
+
+    computeScalingForNodeSize();
+
+
+ svg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+  sankey = d3.sankey()
+      .nodeWidth(5)
+      .nodePadding(1)
+      .size([width, height]);
+  
+ 
+  
+  
+  //initialise sankey
+    sankey
+	.nodes(videos)
+	.links(links)
+	.layout(50);
+  
+    //------------------------------------------
+    //display the links
+    //------------------------------------------
+
+    var link = svg.append("g").selectAll(".link")
+	.data(sankey.getLinks())
+	//.data(sankey.filteredLinks)
+      .enter().append("path")
+	.attr("class", "link")
+	.attr("d", sankey.link())
+	  .style("stroke-width", function(d) { return d.dy; })
+	  .style("stroke-dasharray", function(d) { if(d.target.targetLinks.length>1) { return "3,5";} else{return "1,0";}})
+
+	  .style("stroke", function(d) {return d.color = "Black"})
+	  .style("opacity", function(d) { if(d.target.targetLinks.length>1) { return 0.3} else{return 1} })
+
+
+	.sort(function(a, b) { return b.dy - a.dy; });
+  
+    link.append("title")
+	  .text(function(d) {  return d.target.catN + "\n value:" + d.value ;});
+          //------------------------------------------
+
+                
+                
+  
+      //------------------------------------------
+      //display the nodes
+      //------------------------------------------
+      var node = svg.append("g").selectAll(".node")
+	.data(sankey.getNodes)
+      .enter().append("g")
+	.attr("class", "node")
+	.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+      .call(d3.behavior.drag()
+	.origin(function(d) { return d; })
+	.on("dragstart", function() { this.parentNode.appendChild(this); })
+	.on("drag", dragmove));
+  
+	node.selectAll("path")
+	    .data(function(d,i){return pie(d.leafs);})
+	    .enter()
+	  .append("svg:path")
+	    .attr("d",arc(function(d,i){ return d.data.sizeOut;},function(d,i){return d.data.sizeIn;}))
+	    .attr("fill",function(d,i){return color(d.data.catName)})
+	    
+	    
+    node.append("circle")
+	.attr("r", function(d) {return sizeFromPopularity(d.popularity);})
+	.style("fill", function(d) {return d.color = color(d.catN); })
+	.style("stroke", function(d) { return d3.rgb(d.color).darker(2); })
+	.style("opacity", function(d) { if(d.targetLinks.length>1) { return 0.5} else{return 0.9} })
+
+        .append("title")
+	.text(function(d) { return "id: " + d.id + "\n" + "name: " + d.name + "\n" +  "author:" + d.author + "\n" +  "node value:" + d.popularity+  "\n" + "paramX: " + d.paramX  + "\n Torus: " + ((d.leafs!=0) ? d.leafs[0].totalSize : "0");});
+  
+  
+            //------------------------------------------
+
+    function dragmove(d) {
+      d3.select(this).attr("transform", "translate(" + d.x + "," + (d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))) + ")");
+      sankey.relayout();
+      link.attr("d", sankey.link());
+    }
+    
+    function doPieChartFromVideo(v) {
+    var pie = d3.layout.pie()
+      .sort(null)
+      .value(function(d) { return d.population; });
+    }
+    
+    
+  displayStats();
+  
+   
+}
+ function transitionToNewPostion(){
+     svg.selectAll(".node")
+	.transition().duration("2000").attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+      
+      svg.selectAll(".link")
+
+	.transition().duration("2000")
+	.attr("d", sankey.link())
+
+	sankey.relayout();
+	
+    }
+    
+    function removeAxis(){
+      svg.selectAll(".axis").remove();
+    }
+    
+    function drawAxis(){
+   //Create the axis
+    //---------------------------------
+
+    xScale = d3.time.scale()
+	      .range([0, width])
+	      .domain([new Date(firstDate),new Date(lastDate)])
+
+	xAxis = d3.svg.axis().scale(xScale).orient("top").tickSize(height)//.ticks(d3.time.year, 6);
+  
+    var gy = svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate("+(0)+"," + (height+axisHeight )+ ")")
+      .call(xAxis);
+      
+      gy.selectAll("g").filter(function(d) { return d; })
+	.classed("minor", true);
+	
+    //---------------------------------
+}
+
+function displayStats(){
+    
+    //write the metric
+    $("#graphs").append("totalNodes: "+Object.keys(network).length+"<br>");
+    $("#graphs").append("Top Node impact: "+computeMetricDiversityTop().toFixed(2)+"<br>");
+    $("#graphs").append(" top1% impact: "+computeMetricDiversityTops(1).toFixed(2)+"<br>");
+
+    $("#graphs").append("recombine ratio: "+computeCombinationRatio().toFixed(2)+"<br>");
+    $("#graphs").append("sustainability rate: "+computeSustainRate().toFixed(2)+"<br><br>");
+    
+    
+    console.log("will display stats");
+    initializeScale(0,findMaxGlobalDate());
+    var dataForStackedArea = getNodesByImpact();
+    var forGraph = [];
+    
+    for(var i = 0;i<dataForStackedArea.length;i++){
+      for(var j = 0; j < dataForStackedArea[i].length;j++){
+	var serie =  "#"+(i+1);
+	if (i == dataForStackedArea.length-1) {
+	  serie = "others";
+	}
+	forGraph.push({"topItems":serie,"time":j,"val":dataForStackedArea[i][j]})
+      }
+    }
+    
+    
+   drawAsBarStackedArea(200,150,"#graphs","time","val",forGraph,"topItems",true);
+   
+
+    drawAsBarChartCatColors(200,150,"#graphs","level","val",getNbVideosByLevel(),"serie",false);
+    
+  console.log("finished display "+ currentDisplayedTag);
+
+   }
+   
+   
+   
+   
+   
+   
+   
+   
+   //------------------------------
+   //interactive functions
+  //------------------------------
+
+   
+    //call to switch to the display by step
+   function makeByStep(){
+    console.log("changing x to date");
+    sankey.setStepAsX();
+    transitionToNewPostion();
+    removeAxis();
+  }
+  
+  //call to switch to the display by date
+  function makeByDate(){
+    console.log("changing x to date");
+    sankey.setDateAsX();
+    transitionToNewPostion();
+    	drawAxis();
+
+  }
+  
+   //change the maximum total number of nodes displayed
+  function changeNbNodes(){
+    console.log("new number of nodes: "+$("#nbNodes").val());
+    
+    howManyNodesWeWantToDisplay = $("#nbNodes").val();
+        console.log("tag we want to display: "+currentDisplayedTag);
+
+    changeToEl(currentDisplayedTag);
+  }
+
+
+</script>
