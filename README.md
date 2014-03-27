@@ -9,11 +9,12 @@ _____________________________________________
 ###INPUT FORMAT
 
 If you want to display your own data, you need the following files, all located in the folder "data" and described below.
-CooperationFlow: 
+
+####CooperationFlow: 
 - XXX.json : A file describing the cooperation flow "XXX", containing all relevent information. You can have as many of these files as you want. 
 - flowsToDisplay.json : A file which indicate the list of the files with cooperation flows you want to display. 
 
-GlobalView:
+####GlobalView:
 - global.json : A file containing all the time series of all the cooperation flows.
 _____________________________________________
 

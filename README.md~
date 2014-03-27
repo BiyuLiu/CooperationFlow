@@ -6,7 +6,7 @@ There is one html file for each, and they make references to files in the "tools
 
 _____________________________________________
 
-#INPUT FORMAT
+###INPUT FORMAT
 
 If you want to display your own data, you need the following files, all located in the folder "data" and described below.
 CooperationFlow: 
@@ -22,7 +22,7 @@ We could write a simple stand alone file to create it.
 
 _____________________________________________
 
-#XXX.json
+###XXX.json
 
 {"nodes":[NODE1,NODE2,...], "links":[LINK1,LINK2,...], "categories":[CAT1,CAT2,...], "firstDate":DATE, "lastDate":DATE, "name":NAME,"largestNode":LARGESTNODE}
 - NODE = {"id":A, "date":B, "author":C, "name":D, "catN":E, "popularity":F, "paramX":G}
@@ -46,7 +46,7 @@ _____________________________________________
 
 
 
-#flowsToDisplay.json
+###flowsToDisplay.json
 
 [FILENAME1,FILENAME2,...]
 - FILENAME: the name of a file containing a cooperation flow, such as FILENAME.json exists.
@@ -56,7 +56,7 @@ _____________________________________________
 
 
 
-#global.json
+###global.json
 
 {"firstDate":DATE, "lastDate":DATE, "categories":[CAT1,CAT2,...], "allSequences":{CAT1:SEQUENCE,CAT2:SEQUENCE,...}}
 - DATE:same as before, date as a string
