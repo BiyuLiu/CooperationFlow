@@ -49,7 +49,6 @@ _____________________________________________
 #flowsToDisplay.json
 
 [FILENAME1,FILENAME2,...]
-with
 - FILENAME: the name of a file containing a cooperation flow, such as FILENAME.json exists.
 
 
@@ -60,12 +59,10 @@ with
 #global.json
 
 {"firstDate":DATE, "lastDate":DATE, "categories":[CAT1,CAT2,...], "allSequences":{CAT1:SEQUENCE,CAT2:SEQUENCE,...}}
-with
 - DATE:same as before, date as a string
 - CAT: same as before, category as a string. CAT in "allsequences" must belong to CAT in "categories"
 - SEQUENCE:[X1,X2,...]
-	with
-		- X: a number.
+  - X: a number.
 	
 The idea here is that CAT:SEQUENCE represents the time series of elements of the category CAT. The time series can be as long as you want, and will be scaled to math firsDate and lastDate. All timeSeries must of course be of the same length.
 
