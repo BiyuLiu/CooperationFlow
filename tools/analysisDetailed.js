@@ -19,7 +19,7 @@ function initializeScale(minVal,maxVal){
 
     scaleScalingFromDate.domain([minVal,maxVal])
     scaleScalingFromDate.range([0,nbStepsForTools]);
-    console.log("scale initialized"+" "+minVal+" "+maxVal);
+    //console.log("scale initialized"+" "+minVal+" "+maxVal);
 }
 
 //return the list of all nodes sorted by their number of total citations
@@ -31,8 +31,8 @@ function getListNodesRefsSorted(){
     
     //found the 5 most influential works
     netCopy.sort(function(a,b){return b.refBy.length-a.refBy.length;})
-    console.log("netCopy")
-    console.log(netCopy);
+    //console.log("netCopy")
+    //console.log(netCopy);
     return netCopy;
 
 }
@@ -100,8 +100,8 @@ function getNbVideosByLevel(){
         toReturn.push(tempWithId[key]); 
     }
     
-    console.log("finished to compute stat by Step");
-    console.log(toReturn);
+    //console.log("finished to compute stat by Step");
+    //console.log(toReturn);
 
     
     return toReturn;
@@ -164,9 +164,9 @@ function getNodesByImpact() {
         
     }
     
-    console.log("finished to compute values for stack");
+   // console.log("finished to compute values for stack");
 
-    console.log(listOfRelativeImportances);
+  //  console.log(listOfRelativeImportances);
 
     return listOfRelativeImportances;
    

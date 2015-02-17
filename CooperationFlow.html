@@ -17,8 +17,11 @@
   stroke-dasharray: 2,2;
 }
 
+.input-mini {
+width: 5px;
+}
 
-#resultSearch{
+#leftPart{
   float:left;
   width:200px;
   height:800px;
@@ -30,7 +33,7 @@
   width:300px;
   height:800px;
 }
-
+#resultSearch { cursor: pointer; }
 
 #chart {
   height:800px;
@@ -38,7 +41,7 @@
 }
 .node rect {
   cursor: move;
-  fill-opacity: .9;
+  fill-opacity: 1;
   shape-rendering: crispEdges;
 }
 
@@ -50,7 +53,7 @@
 .link {
   fill: none;
   stroke: #000;
-  stroke-opacity: .2;
+  stroke-opacity: .5;
 }
 
 .link:hover {
@@ -59,26 +62,76 @@
 
 </style>
 <body>
-<!-- <canvas id="timeline" width="1310" height="20">
-</canvas>
+<!-- Imports
 -->
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 <script src="http://d3js.org/d3.v2.min.js?2.9.1"></script>
 <script src="http://dimplejs.org/dist/dimple.v1.1.5.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 
 
 <script src="tools/sankey2.js"></script>
 <script src="tools/generateGraphic.js"></script>
 <script src="tools/analysisDetailed.js"></script>
 
-<div id="resultSearch"> </div>
+
+<!-- HTML code of the page, static, filled by functions
+-->
+<div id="leftPart"> 
+  <table class="table table-hover " id="resultSearch">
+  </table>
+</div>
+
 <div id="legendC">
-    x = collaborationStep <input type='radio' name='myRadios' onChange="makeByStep();">
-  x = time  <input type='radio' name='myRadios' onChange="makeByDate();">
-  nodes to display : <input type="text" id = "nbNodes" value="30" size="2"><button type="button" onclick="changeNbNodes();">Go</button>
-  <div id="legend"></div>
-  <div id="graphs"></div>
+  <div class="panel panel-primary">
+    <div class="panel-body">
+      <div class="radio">
+        <label>
+          <input type="radio" name="myRadios" id="optionsRadios1" value="option1" onChange="makeByStep();" checked>
+          x axis = step
+        </label>
+      </div>
+      <div class="radio">
+        <label>
+          <input type="radio" name="myRadios" id="optionsRadios2" value="option2" onChange="makeByDate();">
+          x axis = time
+        </label>
+      </div>
+      <div class="input-group">
+        <span class="input-group-addon"># displayed nodes:</span>
+        <input style="max-width:60px" type="text" class="form-control input-mini" id="nbNodes" aria-describedby="inputGroupSuccess1Status" value="10">
+        <button class="btn btn-default" type="button" onclick="changeNbNodes();">Go</button>
+
+      </div>
+    </div>
+
+  </div>
+ 
+ 
+  <div id="legend">
     
+  </div>
+  <div id="graphs">
+    <div class="panel panel-primary">
+      <div id="generalStats" class="panel-body">
+      </div>
+    </div>
+  </div>
+  
+  <div role="tabpanel">
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active" onclick="setTimeout(function(){updateTopNodeGraph()},10)"><a href="#topNodePlot" aria-controls="topNodePlot" role="tab" data-toggle="tab">Top influencers</a></li>
+      <li role="presentation" ><a href="#byStepPlot" aria-controls="byStepPlot" role="tab" data-toggle="tab" onclick="setTimeout(function(){updateByStepPlot()},10)">Cat. by step</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="topNodePlot"><div id="topNodePlotContent"></div> </div>
+      <div role="tabpanel" class="tab-pane" id="byStepPlot"> <div id="byStepPlotContent"></div></div>
+    </div>
+  </div>
+
 </div>
 <p id="chart">
 
@@ -88,7 +141,8 @@
 <script>
 
 
-
+howManyNodesWeWantToDisplay = 30;
+xAxisAsStep = true;
 
 var currentDisplayedTag;
 var videos,links,allTags,allCats,largestNode = -1;
@@ -97,8 +151,9 @@ var firstDate,lastDate;
 var axisHeight = 0;
 var rOfBiggestNode = 20;
 
+var windowsWidth = $(window).width();
 var margin = {top: 50, right: 10, bottom: 6, left: 50},
-    width = 1000 - margin.left - margin.right,
+    width = windowsWidth - margin.left - margin.right - 300 - 200 - 50, // remove the width of right and left part, plus intern margin
     height = 20000 - margin.top - margin.bottom;
 
 var formatNumber = d3.format(",.0f"),
@@ -117,7 +172,7 @@ var formatNumber = d3.format(",.0f"),
       
     //get the argument passed to the address if exist, node to display
     arg = window.location.search.replace("?","");
-    console.log("argument:"+arg);
+    //console.log("argument:"+arg);
     if (arg!="") {
           loadVideoAndLinks(arg);
     }
@@ -138,7 +193,7 @@ var formatNumber = d3.format(",.0f"),
   //function called to change the cooperation flow displayed
   function changeToEl(tag){
     $("#chart").html("");
-    $("#graphs").html("");
+    $("#generalStats").empty();
     
     loadVideoAndLinks(tag);
   }
@@ -209,17 +264,27 @@ var arc = function(sizeOut,sizeIn) { return d3.svg.arc()
 
 function populatePossibleTags(jsonTags){
   var resultSearch = "";
-    
+  $("#resultSearch").empty()
+  resultSearch+="<tr><th>Flows:</th></td>";
+  
   jsonTags.forEach(function(el){
-
-      resultSearch+="<div onclick=\"changeToEl('";
+    if(currentDisplayedTag==el){
+      resultSearch+='<tr class="info">';
+    }
+    else{
+      resultSearch+="<tr>";
+    }
+  
+      resultSearch+="<td><div onclick=\"changeToEl('";
+        
       resultSearch+=el+"')\">"
-      resultSearch+=el+"</div><br>";
+      resultSearch+=el+"</div></tr></td>";
     
   
   
   });
-    jQuery("#resultSearch").html(resultSearch);
+    //jQuery("#resultSearch").html(resultSearch);
+    $("#resultSearch").append(resultSearch)
 
 }
 
@@ -305,6 +370,12 @@ function ready() {
 	.links(links)
 	.layout(50);
   
+  if(xAxisAsStep==true){
+    sankey.setStepAsX();
+  }
+  else{
+    sankey.setDateAsX();
+  }
     //------------------------------------------
     //display the links
     //------------------------------------------
@@ -356,7 +427,7 @@ function ready() {
 	.attr("r", function(d) {return sizeFromPopularity(d.popularity);})
 	.style("fill", function(d) {return d.color = color(d.catN); })
 	.style("stroke", function(d) { return d3.rgb(d.color).darker(2); })
-	.style("opacity", function(d) { if(d.targetLinks.length>1) { return 0.5} else{return 0.9} })
+	//.style("opacity", function(d) { if(d.targetLinks.length>1) { return 0.5} else{return 0.9} })
 
         .append("title")
 	.text(function(d) { return "id: " + d.id + "\n" + "name: " + d.name + "\n" +  "author:" + d.author + "\n" +  "node value:" + d.popularity+  "\n" + "paramX: " + d.paramX  + "\n Torus: " + ((d.leafs!=0) ? d.leafs[0].totalSize : "0");});
@@ -376,7 +447,7 @@ function ready() {
       .value(function(d) { return d.population; });
     }
     
-    
+    console.log("dsfhjdkshfskjlqdhfdjklsfhjkdsqlfhdjksqhfdjskqlfh")
   displayStats();
   
    
@@ -421,40 +492,70 @@ function ready() {
 
 function displayStats(){
     
-    //write the metric
-    $("#graphs").append("totalNodes: "+Object.keys(network).length+"<br>");
-    $("#graphs").append("Top Node impact: "+computeMetricDiversityTop().toFixed(2)+"<br>");
-    $("#graphs").append(" top1% impact: "+computeMetricDiversityTops(1).toFixed(2)+"<br>");
+    //write the metric      
+    $("#generalStats").append("Total nodes: "+Object.keys(network).length+"<br>");
+    $("#generalStats").append("Top Node impact: "+computeMetricDiversityTop().toFixed(2)+"<br>");
+    $("#generalStats").append("Top1% impact: "+computeMetricDiversityTops(1).toFixed(2)+"<br>");
 
-    $("#graphs").append("recombine ratio: "+computeCombinationRatio().toFixed(2)+"<br>");
-    $("#graphs").append("sustainability rate: "+computeSustainRate().toFixed(2)+"<br><br>");
+    $("#generalStats").append("Recombine ratio: "+computeCombinationRatio().toFixed(2)+"<br>");
+    $("#generalStats").append("Sustainability rate: "+computeSustainRate().toFixed(2)+"<br>");
     
+
     
     console.log("will display stats");
     initializeScale(0,findMaxGlobalDate());
-    var dataForStackedArea = getNodesByImpact();
-    var forGraph = [];
-    
-    for(var i = 0;i<dataForStackedArea.length;i++){
-      for(var j = 0; j < dataForStackedArea[i].length;j++){
-	var serie =  "#"+(i+1);
-	if (i == dataForStackedArea.length-1) {
-	  serie = "others";
-	}
-	forGraph.push({"topItems":serie,"time":j,"val":dataForStackedArea[i][j]})
-      }
-    }
-    
-    
-   drawAsBarStackedArea(200,150,"#graphs","time","val",forGraph,"topItems",true);
+        
+   updateTopNodeGraph();
    
+   updateByStepPlot();
 
-    drawAsBarChartCatColors(200,150,"#graphs","level","val",getNbVideosByLevel(),"serie",false);
     
   console.log("finished display "+ currentDisplayedTag);
 
    }
    
+   function updateTopNodeGraph(){
+     console.log("mmmmmmmm")
+     var dataForStackedArea = getNodesByImpact();
+
+         var forGraph = [];
+     
+         for(var i = 0;i<dataForStackedArea.length;i++){
+           for(var j = 0; j < dataForStackedArea[i].length;j++){
+       var serie =  "#"+(i+1);
+       if (i == dataForStackedArea.length-1) {
+         serie = "others";
+       }
+       forGraph.push({"topItems":serie,"time":j,"val":dataForStackedArea[i][j]})
+           }
+         }
+
+     console.log("iiiii")
+
+     $("#topNodePlotContent").empty()
+     console.log("iiiii")
+
+      try {
+     drawAsBarStackedArea(200,200,"#topNodePlotContent","time","val",forGraph,"topItems",true);
+     console.log("iiiii")
+     }
+     catch(err) {
+       //console.log(" error because the tab does not exist");
+     }
+
+   }
+   
+   function updateByStepPlot(){
+     console.log("cliclciclcilci");
+
+    $("#byStepPlotContent").empty()
+    try {
+      drawAsBarChartCatColors(200,200,"#byStepPlotContent","level","val",getNbVideosByLevel(),"serie",false);
+    }
+    catch(err) {
+      //console.log(" error because the tab does not exist");
+    }
+   }
    
    
    
@@ -469,7 +570,8 @@ function displayStats(){
    
     //call to switch to the display by step
    function makeByStep(){
-    console.log("changing x to date");
+    console.log("changing x to step");
+    xAxisAsStep =true
     sankey.setStepAsX();
     transitionToNewPostion();
     removeAxis();
@@ -478,6 +580,7 @@ function displayStats(){
   //call to switch to the display by date
   function makeByDate(){
     console.log("changing x to date");
+    xAxisAsStep =false
     sankey.setDateAsX();
     transitionToNewPostion();
     	drawAxis();

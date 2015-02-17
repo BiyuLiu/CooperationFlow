@@ -1,5 +1,4 @@
 var network = {}; // the network defined as an associative list id:node  : node.refBy node.refTo
-var howManyNodesWeWantToDisplay = 30;
 
 var totalInformationdisplayed = 0;
 
@@ -39,8 +38,8 @@ var nbSteps = 0;
     sortedNodes.sort(function(a,b){return b.importance - a.importance;})
     sortedNodes = sortedNodes.slice(0,number);
    
-   console.log("nodes to display selected")
-   console.log(sortedNodes)
+   //console.log("nodes to display selected")
+   //console.log(sortedNodes)
     return sortedNodes;
   };
   
@@ -91,11 +90,11 @@ var nbSteps = 0;
      
     computeNodeDepths(nodes);
     
-          console.log("test");
+          //console.log("test");
 
     computeLinkDepths();
     
-    console.log("finished to display");
+    //console.log("finished to display");
     
     computeTotalInformation();
     return sankey;
@@ -127,7 +126,7 @@ var nbSteps = 0;
   sankey.link = function() {
     //var curvature = 0.5;
 
-    console.log("---------------links");
+   // console.log("---------------links");
     function link(d) {
       var x0 = d.source.x, //+ d.source.dx,
           x1 = d.target.x,
@@ -217,7 +216,7 @@ var nbSteps = 0;
       node.importance=0;
     });
     
-    	    console.log("--------- compute -----------");
+    	   // console.log("--------- compute -----------");
 
     for(level=nbSteps;level>=0;level--){
       nodes.forEach(function(node){
@@ -234,7 +233,7 @@ var nbSteps = 0;
   
   //function to replace real dates by the step in the hierarchy
   function computeByStep(){
-    console.log("compute STEP")
+    //console.log("compute STEP")
     step0 = [];
     for(n in nodes){
       theNode = nodes[n];
@@ -248,7 +247,7 @@ var nbSteps = 0;
 	step0.push(theNode);
       }
     }
-    console.log("STEP roots initialized")
+    //console.log("STEP roots initialized")
     nodesToDo = step0;
     while(nodesToDo.length>0){
       n = nodesToDo.shift();
@@ -383,7 +382,7 @@ var nbSteps = 0;
     
     var nodesT = sankey.selectedNodes(howManyNodesWeWantToDisplay);
     
-    console.log("cleaned nodes:"+nodesT.length);
+    //console.log("cleaned nodes:"+nodesT.length);
 
     
     nodesT.forEach(function(node) {
@@ -416,7 +415,7 @@ var nbSteps = 0;
       linksT = linksT.concat(nodesT[i].sourceLinks);
       countEdges+=(nodesT[i].sourceLinks.length+nodesT[i].targetLinks.length)/2;
     }
-        console.log("cleaned edges:"+countEdges);
+        //console.log("cleaned edges:"+countEdges);
 
   nodes = nodesT;
   links = linksT;
@@ -445,7 +444,7 @@ var nbSteps = 0;
 
 	var highest = sankey.getHighestDateValue();
 
-	scaleNodeBreadths((size[0] - nodeWidth) / highest.xDate,(size[0] - nodeWidth) / highest.xStep);
+	scaleNodeBreadths((size[0] - nodeWidth) / highest.xDate, (size[0] - nodeWidth) / highest.xStep);
 
    
   }
@@ -718,7 +717,7 @@ function initializeNodeDepth(minimumDy) {
       }
     }
     
-    console.log("total information in the network: "+totalInformationdisplayed);
+   // console.log("total information in the network: "+totalInformationdisplayed);
     
           var countRefedNodes = 0;
 
@@ -730,7 +729,7 @@ function initializeNodeDepth(minimumDy) {
 	countRefedNodes++;
       }
     }
-    console.log("tot nbNodes:"+Object.keys(network).length+" nodesWithSucc"+countRefedNodes)
+    //console.log("tot nbNodes:"+Object.keys(network).length+" nodesWithSucc"+countRefedNodes)
     
   }
   return sankey;
