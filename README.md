@@ -1,3 +1,7 @@
+###An exemple of these visualizations can be found at: http://cazabetremy.fr/cooperationFlow.html
+
+####General presentation 
+
 This visualization is composed of two independant parts: 
 - the cooperation flow visualization, displaying the details of the interactions inside a cooperation flow
 - the global view Visualization, displaying several cooperation flows in the form of time series
