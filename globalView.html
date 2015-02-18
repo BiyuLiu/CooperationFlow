@@ -7,7 +7,7 @@ body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   /*margin: auto;
   position: relative;*/
-  width: 1500px;
+  /*width: 1500px;*/
 }
 
 
@@ -51,20 +51,29 @@ body {
 <body>
 
 <div id="infos">
-  <div id="legend"></div>
-  <div id="graphs"></div>
+	<div class="input-group">
+    		<span class="input-group-addon"> Height scaling:</span>
+     	   <input style="max-width:60px" type="text" class="form-control input-mini" id="scaling" aria-describedby="inputGroupSuccess1Status" value="1">
+     	   <button class="btn btn-default" type="button" onclick="changeScaling();">Go</button>
+	</div>  
+<div id="legend"></div>
+<div id="graphs"></div>
 </div>
-<p id="chart">
+<div id="chart"></div>
   
   
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 <script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://dimplejs.org/dist/dimple.v1.1.5.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 
 <script src="tools/analysis.js"></script>
 <script src="tools/generateShapes.js"></script>
 <script src="tools/analysisGlobal.js"></script>
 <script src="tools/generateGraphic.js"></script>
 <script src="http://dimplejs.org/dist/dimple.v1.1.5.min.js"></script>
+
 <script>
 
 //is filled with object containing sum data and y value (list: y:)
@@ -78,9 +87,11 @@ var nbTotalSteps; // length of the time series. total number of steps.
 
 var firstDate, lastDate; //first and last date of the time series, used to calculate axis
 
-var amplitudeScale = 1; // coefficient defining the "width" of displayed shapes. Could be automatized. Big values mean large shapes
+var amplitudeScale = 0.5; // coefficient defining the "width" of displayed shapes. Could be automatized. Big values mean large shapes
 
-var width = 800, // width and height of the main canva.
+var windowsWidth = $(window).width();
+
+var width = windowsWidth - 450 - 50 , // width and height of the main canva.
 height = 10000;
 
 color = d3.scale.category20(); //colors for the legend
@@ -89,8 +100,12 @@ var svg;
 var countWhatIsDone = 0;
 var widthOfTimeAxis = 30;
 
+loadData()
 
-
+function loadData(){
+listOfDisplayedData=[]
+allTimeSeries = []
+allStats = []
 //-----------------------------------------------
 //Load all time series from global file. Call display function when everything is loaded
 //-----------------------------------------------
@@ -128,10 +143,19 @@ var widthOfTimeAxis = 30;
     
   }
   )
+}
  //-----------------------------------------------
 
   
-  
+  function changeScaling(){  
+amplitudeScale = $("#scaling").val();
+
+  $("#chart").empty();
+$("#legend").empty();
+
+  $("#graphs").empty();
+  loadData()
+  }
 
 //main function, draw everything
 function ready(){

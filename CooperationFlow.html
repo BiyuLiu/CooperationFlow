@@ -72,6 +72,8 @@ width: 5px;
 
 
 <script src="tools/sankey2.js"></script>
+<script src="tools/spin.js"></script>
+
 <script src="tools/generateGraphic.js"></script>
 <script src="tools/analysisDetailed.js"></script>
 
@@ -100,7 +102,7 @@ width: 5px;
       </div>
       <div class="input-group">
         <span class="input-group-addon"># displayed nodes:</span>
-        <input style="max-width:60px" type="text" class="form-control input-mini" id="nbNodes" aria-describedby="inputGroupSuccess1Status" value="10">
+        <input style="max-width:60px" type="text" class="form-control input-mini" id="nbNodes" aria-describedby="inputGroupSuccess1Status" value="20">
         <button class="btn btn-default" type="button" onclick="changeNbNodes();">Go</button>
 
       </div>
@@ -141,7 +143,7 @@ width: 5px;
 <script>
 
 
-howManyNodesWeWantToDisplay = 30;
+howManyNodesWeWantToDisplay = 20;
 xAxisAsStep = true;
 
 var currentDisplayedTag;
@@ -162,6 +164,27 @@ var formatNumber = d3.format(",.0f"),
     color = d3.scale.category20(); //reinitialised when changing the displayed flow
 
  count = 0;
+
+//just options for the spinner in case of long loading time
+  var opts = {
+  lines: 13, // The number of lines to draw
+  length: 20, // The length of each line
+  width: 10, // The line thickness
+  radius: 30, // The radius of the inner circle
+  corners: 1, // Corner roundness (0..1)
+  rotate: 0, // The rotation offset
+  direction: 1, // 1: clockwise, -1: counterclockwise
+  color: '#000', // #rgb or #rrggbb or array of colors
+  speed: 1, // Rounds per second
+  trail: 60, // Afterglow percentage
+  shadow: false, // Whether to render a shadow
+  hwaccel: false, // Whether to use hardware acceleration
+  className: 'spinner', // The CSS class to assign to the spinner
+  zIndex: 2e9, // The z-index (defaults to 2000000000)
+  top: '50%', // Top position relative to parent
+  left: '50%' // Left position relative to parent
+};
+
 
  
  //load the list of all flows to display
@@ -202,11 +225,20 @@ var formatNumber = d3.format(",.0f"),
   //function to load the videos and links
   //------------------------------------
   function loadVideoAndLinks(tag){
+  
+
+var target = document.getElementById('chart');
+var spinner = new Spinner(opts).spin(target);
+console.log("et pourtant il tourne");
+
+setTimeout(function(){
+
     currentDisplayedTag = tag;
     count = 0;
     color = d3.scale.category20();
       jQuery.getJSON("data/"+tag+".json")
     .done(function(data){
+             
      //load categories
     allCats = data.categories;
     console.log("loaded categories:"+allCats.length);
@@ -228,15 +260,23 @@ var formatNumber = d3.format(",.0f"),
     }
 
     
-    
+    console.log("tourne plus");
+
+   			 spinner.stop()
     ready();
+}, 100);
+
+    
         
+        
+
     })
     .fail(function(a,b,c){
       console.log(b+"-"+c)
       
     }
     )
+   
   }
     //------------------------------------
 
